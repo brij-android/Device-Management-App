@@ -19,8 +19,6 @@
 
 package com.hmdm.launcher.ui;
 
-import static com.hmdm.launcher.util.InstallUtils.createIntentSender;
-
 import android.Manifest;
 import android.app.Dialog;
 import android.app.admin.DevicePolicyManager;
@@ -28,14 +26,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -124,19 +120,17 @@ import com.squareup.picasso.Picasso;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 
-public class MainActivity extends BaseActivity implements View.OnLongClickListener, BaseAppListAdapter.OnAppChooseListener, BaseAppListAdapter.SwitchAdapterListener, View.OnClickListener, ConfigUpdater.UINotifier {
+public class MainActivity extends BaseActivity implements View.OnLongClickListener, BaseAppListAdapter.OnAppChooseListener, BaseAppListAdapter.SwitchAdapterListener, View.OnClickListener/*, ConfigUpdater.UINotifier*/ {
 
     private static final int PERMISSIONS_REQUEST = 1000;
-
+    private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private SettingsHelper settingsHelper;
 
@@ -419,18 +413,19 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
 
         isBackground = false;
 
-        String file =
-                "/storage/emulated/0/Android/media/com.diipl.moviebeam/APK/Moviebeam_Prod_V(2.2.4)_20240314-debug.apk";
-//      startInstall(file);
-
         // On some Android firmwares, onResume is called before onCreate, so the fields are not initialized
         // Here we initialize all required fields to avoid crash at startup
         reinitApp();
 
-      /*  DevicePolicyManager devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
-        if (devicePolicyManager.isDeviceOwnerApp(getPackageName()))
-            devicePolicyManager.clearDeviceOwnerApp(getPackageName());*/
-
+        DevicePolicyManager policyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+        boolean is = policyManager.isDeviceOwnerApp(getPackageName());
+        if (is) {
+            String serialNo = DeviceInfoProvider.getSerialNumber();
+            Log.e(TAG, "serialNo: "+serialNo );
+            if (serialNo.equals("unknown")){
+                startActivity(new Intent(getApplicationContext(), RebootActivity.class));
+            }
+        }
         startServicesWithRetry();
 
         if (interruptResumeFlow) {
@@ -447,39 +442,6 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
             }
         } else {
             setSelfAsDeviceOwner();
-        }
-    }
-
-    private void startInstall(String file) {
-        try {
-            Log.i(Const.LOG_TAG, "Installing " + getPackageName());
-            FileInputStream in = new FileInputStream(file);
-            PackageInstaller packageInstaller = getPackageManager().getPackageInstaller();
-            PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
-                    PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-            params.setAppPackageName(getPackageName());
-            // set params
-            int sessionId = packageInstaller.createSession(params);
-            PackageInstaller.Session session = packageInstaller.openSession(sessionId);
-            OutputStream out = session.openWrite("COSU", 0, -1);
-            byte[] buffer = new byte[65536];
-            int c;
-            while ((c = in.read(buffer)) != -1) {
-                out.write(buffer, 0, c);
-            }
-            session.fsync(out);
-            in.close();
-            out.close();
-
-            session.commit(createIntentSender(this, sessionId, getPackageName()));
-            Log.i(Const.LOG_TAG, "Installation session committed");
-
-            Intent intent = new Intent();
-            intent.setComponent(new ComponentName("com.diipl.moviebeam", "com.diipl.moviebeam.ui.mainmenu.MainMenuActivity"));
-            startActivity(intent);
-        } catch (Exception e) {
-            Log.w(Const.LOG_TAG, "PackageInstaller error: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -595,9 +557,9 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... voids) {
-                /*if (!SystemUtils.becomeDeviceOwnerByCommand(MainActivity.this)) {
+                if (!SystemUtils.becomeDeviceOwnerByCommand(MainActivity.this)) {
                     SystemUtils.becomeDeviceOwnerByXmlFile(MainActivity.this);
-                }*/
+                }
                 SystemUtils.becomeDeviceOwnerByCommand(MainActivity.this);
                 return null;
             }
@@ -1213,7 +1175,7 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
             lockOrientation();
             orientationLocked = true;
         }
-        configUpdater.updateConfig(this, this, userInteraction);
+//        configUpdater.updateConfig(this, this, userInteraction);
     }
 
     // Workaround against crash "App is in background" on Android 9: this is an Android OS bug
@@ -1246,7 +1208,7 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
         startService(intent);
     }
 
-    @Override
+   /* @Override
     public void onConfigUpdateStart() {
         binding.setMessage(getString(R.string.main_activity_update_config));
     }
@@ -1432,7 +1394,7 @@ public class MainActivity extends BaseActivity implements View.OnLongClickListen
                 binding.setDownloading(false);
             }
         });
-    }
+    }*/
 
     private boolean applyEarlyPolicies(ServerConfig config) {
         Initializer.applyEarlyNonInteractivePolicies(this, config);

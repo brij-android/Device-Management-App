@@ -138,7 +138,12 @@ android {
 }
 
 dependencies {
+
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     androidTestImplementation('androidx.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })

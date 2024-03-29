@@ -56,6 +56,7 @@ import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -185,7 +186,7 @@ public class InstallUtils {
 
         if (v1 == null || v2 == null) {
             // Exceptional case, we should never be here but this shouldn't crash the app with NPE
-            return v1 == v2;
+            return Objects.equals(v1, v2);
         }
 
         // Compare only digits (in Android 9 EMUI on Huawei Honor 8A, getPackageInfo doesn't get letters!)
@@ -225,7 +226,7 @@ public class InstallUtils {
         String[] v2n = v2d.split("\\.");
 
         // One version could contain more digits than another
-        int count = v1n.length < v2n.length ? v1n.length : v2n.length;
+        int count = Math.min(v1n.length, v2n.length);
 
         for (int n = 0; n < count; n++) {
             try {

@@ -226,7 +226,7 @@ public class AdminActivity extends BaseActivity {
     }
 
     public void reboot(View view) {
-        if ( Build.VERSION.SDK_INT > Build.VERSION_CODES.M ) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             ComponentName deviceAdmin = LegacyUtils.getAdminComponentName(this);
             DevicePolicyManager devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
             try {
